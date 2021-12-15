@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -33,14 +32,14 @@ func handleRequest(conn net.Conn) {
 	conn.Close()
 }
 
-func request(destCIDR string, destPort string, sourceIp string, sourcePort string) error {
-	log.Printf("Scanning %v CIDR now!\n---------", destCIDR)
+func request(destIP string, destPort string, sourceIp string, sourcePort string) error {
+	log.Printf("Scanning %v CIDR now!\n---------", destIP)
 	client := &http.Client{
 		Timeout: time.Millisecond * 50,
 	}
 
 	// log.Printf("Testing IP: %v", ip)
-	var url string = fmt.Sprintf("http://%v:%v", destCIDR, destPort)
+	var url string = fmt.Sprintf("http://%v:%v", destIP, destPort)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("Got error %s", err.Error())
@@ -70,14 +69,14 @@ func main() {
 	var welcome string = "Log4Shell Vulnerability Detection.\n---------"
 	var sourceIp string
 	var sourcePort string
-	var destCIDR string
+	var destIP string
 	var destPort string
 	var connType string = "tcp"
 
 	// Register flags
 	flag.StringVar(&sourceIp, "SourceIP", "Unset", "Your Preferred Source/Requesting IP for Callback")
 	flag.StringVar(&sourcePort, "SourcePort", "8081", "Port used for listening on callback, defaults to 8081")
-	flag.StringVar(&destCIDR, "DestCIDR", "192.168.10.0/24", "What Subnet do you want to scan?")
+	flag.StringVar(&destIP, "DestIP", "Unset", "What ip do you want to scan?")
 	flag.StringVar(&destPort, "DestPort", "8080", "At what port are the applications you want to scan?")
 
 	// Parse flags
@@ -89,14 +88,11 @@ func main() {
 		log.Printf("You did not set -SourceIP, please try again or run with --help")
 		os.Exit(1)
 	}
-	if !strings.Contains(destCIDR, "/") {
-		log.Printf("Ensure your properly structured your cidr, e.g., 192.168.1.0/24")
-		os.Exit(1)
-	}
+
 	log.Printf("Running configuration based on input:")
 	log.Printf("Source/Callback IP: %v", sourceIp)
 	log.Printf("Source/Callback Port: %v", sourcePort)
-	log.Printf("Target IP: %v", destCIDR)
+	log.Printf("Target IP: %v", destIP)
 	log.Printf("Target Port: %v", destPort)
 
 	// Listen on requested port
@@ -110,7 +106,7 @@ func main() {
 	defer l.Close()
 
 	log.Printf("Listening on " + sourceIp + ":" + sourcePort + "\n---------")
-	request(destCIDR, destPort, sourceIp, sourcePort)
+	request(destIP, destPort, sourceIp, sourcePort)
 	for {
 		// Listen for an incoming connection.
 		conn, err := l.Accept()
